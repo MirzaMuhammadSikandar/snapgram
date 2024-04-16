@@ -1,8 +1,20 @@
 const express = require("express");
-const PORT = 3000;
+const { PORT, mongoDBURL } = require("./models/config.js");
+const { checkConnection } = require("./models/connection.js");
+const personRouter = require("./routes/personRoute.js")
+const postRouter = require("./routes/postRoute.js")
+
+
 const app = express();
 
+//---- Middleware for parsing request body ---- 
+app.use(express.json());
 
-app.listen(PORT, () => {
-    console.log(`App is listening to port: ${PORT}`);
-});
+
+app.use('/person', personRouter);
+app.use('/post', postRouter);
+
+
+
+//----------------MongoDB Connection-------------------
+checkConnection(app, PORT, mongoDBURL);
