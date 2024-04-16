@@ -155,7 +155,7 @@ const getPerson = async (request, response) => {
         }
 
         console.log('Person--------------------', personData);
-        return response.status(200).send({ status: true, user: personData });
+        return response.status(200).send({ status: true, message: 'Get Post Successful', data: personData});
     } catch (error) {
         console.error('Error!!!---------------:', error);
         return response.status(400).send({ status: false, message: "Error in Get Person Data" });
@@ -178,16 +178,52 @@ const deletePerson = async (request, response) => {
         return response.status(200).send({ status: true, message: 'User Deleted Successfully' });
 
     } catch (error) {
-        console.error('Error!!!---------------:', error);
+        console.error('Error!!!---------------', error);
         return response.status(400).send({ status: false, message: "Error in Deleting Person Data" });
     }
 }
 
+//----------------------- Save/Unsave Post -----------------------
+const savingPost = async (request, response) => {
+    try {
+        console.log('like post params-------------------', request.params.postId);
+        const postId = request.params.postId;
+        const person = await Person.findById({ _id: request.user.id });
+        const post = await Post.findById({ _id: postId });
+        if (!person) {
+            return response.status(400).send({ status: false, message: 'User NOT Found' });
+        }
+        if (!post) {
+            return response.status(400).send({ status: false, message: 'Post NOT Found' });
+        }
+        let saveArray = person.saved;
+        const indexPost = saveArray.indexOf(post._id);
+        if (indexPost >= 0) {
+            console.log('index-----------------', indexPost);
+
+            const x = saveArray.splice(indexPost, 1);
+
+            person.saved = saveArray;
+
+            await person.save();
+            return response.status(200).send({ status: true, message: 'Post Unsaved Successfully' });
+        }
+        else{
+            person.saved.push(post._id);
+            await person.save();
+            return response.status(200).send({ status: true, message: 'Post Saved Successfully' });
+        }
+    } catch (error) {
+        console.error('Error!!!---------------', error);
+        return response.status(400).send({ status: false, message: "Error in Saving Post" });
+    }
+}
 
 module.exports = {
     registration,
     login,
     updatePerson,
     getPerson,
-    deletePerson
+    deletePerson,
+    savingPost
 }

@@ -19,10 +19,21 @@ const addPost = async (request, response) => {
             return response.status(400).send({ status: false, message: 'User NOT Found' });
         }
 
+        let imageId, imageName;
+        if (request.file) {
+            console.log('request file image----------------------', request.file)
+            imageId = request.file.filename;
+            imageName = request.file.originalname;
+            console.log('imageId-------------', imageId)
+            console.log('imageName-------------', imageName)
+        }
+
         // creates an instance of post model
         const post = new Post({
             title,
             caption,
+            imageId,
+            imageName,
             person: person._id
         });
         await post.save();
@@ -48,11 +59,11 @@ const updatePost = async (request, response) => {
             return response.status(400).send({ status: false, message: "Error! params id missing" });
         }
 
-        const { title, description } = request.body;
+        const { title, caption } = request.body;
 
         console.log("req.body--------", request.body);
 
-        if (!title || !description || typeof title !== 'string' || typeof description !== 'string') {
+        if (!title || !caption || typeof title !== 'string' || typeof caption !== 'string') {
             return response.status(400).send({ status: false, message: "User Input Error" });
         }
 
@@ -69,13 +80,24 @@ const updatePost = async (request, response) => {
         if (post.user != person.id) {
             return response.status(400).send({ status: false, message: 'User have NO Access to update this post' });
         }
+
+        let imageId, imageName;
+        if (request.file) {
+            console.log('request file image----------------------', request.file)
+            imageId = request.file.filename;
+            imageName = request.file.originalname;
+        }
+
         const postData = await Task.findByIdAndUpdate({ _id: postId }, {
             $set: {
                 title,
-                description
+                caption,
+                imageId,
+                imageName,
             }
         })
 
+        console.log("Person Data----------------", postData)
         return response.status(200).send({ status: true, message: 'Post Updated Successfully' });
     } catch (error) {
         console.log('Error read-------------------', error);
@@ -138,7 +160,7 @@ const getPost = async (request, response) => {
         }
 
         console.log('Post--------------------', post);
-        return response.status(200).send({ status: true, post });
+        return response.status(200).send({ status: true, message: 'Get Post Successful', data: post });
 
     } catch (error) {
         console.log('Error get post-------------------', error);
@@ -150,8 +172,8 @@ const getPost = async (request, response) => {
 //----------------------- Like Post -----------------------
 const likePost = async (request, response) => {
     try {
-        console.log('like post params-------------------', request.params.id);
-        const postId = request.params.id;
+        console.log('like post params-------------------', request.params.personId);
+        const postId = request.params.personId;
         const person = await Person.findById({ _id: request.user.id });
         const post = await Post.findById({ _id: postId });
         if (!person) {
@@ -160,10 +182,7 @@ const likePost = async (request, response) => {
         if (!post) {
             return response.status(400).send({ status: false, message: 'Post NOT Found' });
         }
-        if (post.person != person.id) {
-            return response.status(400).send({ status: false, message: 'User have NO Access to like this post' });
-        }
-        likesArray = post.likes;
+        let likesArray = post.likes;
         const indexPerson = likesArray.indexOf(person._id);
         if (indexPerson >= 0) {
             console.log('index-----------------', indexPerson);
@@ -172,12 +191,17 @@ const likePost = async (request, response) => {
 
             post.likes = likesArray;
             await post.save();
-            return response.status(200).send({ status: true, message: 'Post Unliked Successfully' });
+
+            const countLikes = likesArray.length;
+            return response.status(200).send({ status: true, message: 'Post Unliked Successfully', data: countLikes });
         }
-        else{
+        else {
             post.likes.push(person._id);
             await post.save();
-            return response.status(200).send({ status: true, message: 'Post Liked Successfully' });
+
+            let likesArray = post.likes;
+            const countLikes = likesArray.length;
+            return response.status(200).send({ status: true, message: 'Post Liked Successfully', data: countLikes });
         }
     } catch (error) {
         console.log('Error like post-------------------', error);

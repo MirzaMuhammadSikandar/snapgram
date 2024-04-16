@@ -10,7 +10,8 @@ const PersonSchema = new mongoose.Schema({
     imageName: { type: String, default: null},
     otp: { type: Number, default: 0 },
     verified: { type: Boolean, default: false },
-    liked: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+    saved: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+    // liked: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
     posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }]
 })
 
