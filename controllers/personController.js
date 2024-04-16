@@ -57,19 +57,18 @@ const login = async (request, response) => {
         console.log("Login request body----------", request.body)
         const person = await Person.findOne({ email })
 
+        const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
         if (!person) {
             return response.status(400).send({ status: false, message: "User NOT Found" });
         }
-
-        const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
-
-        if (passwordHash == person.password) {
+        else if (passwordHash == person.password) {
             const accessToken = generateAccessToken(person._id, person.email)
             // const refreshToken = generateRefreshToken(person._id, person.email)
             return response.status(200).send({ status: true, accessToken: accessToken, personEmail: person.email })
         }
-
-        return response.status(400).send({ status: false, message: "Invalid Password" });
+        else {
+            return response.status(400).send({ status: false, message: "Invalid Password" });
+        }
     } catch (error) {
         console.log('Error---------------------------', error)
         return response.status(400).send({ status: false, message: "Error in Login" });
@@ -153,9 +152,10 @@ const getPerson = async (request, response) => {
         if (!personData) {
             return response.status(400).send({ status: false, message: "User NOT Found" });
         }
-
-        console.log('Person--------------------', personData);
-        return response.status(200).send({ status: true, message: 'Get Post Successful', data: personData});
+        else {
+            console.log('Person--------------------', personData);
+            return response.status(200).send({ status: true, message: 'Get Post Successful', data: personData });
+        }
     } catch (error) {
         console.error('Error!!!---------------:', error);
         return response.status(400).send({ status: false, message: "Error in Get Person Data" });
@@ -171,12 +171,12 @@ const deletePerson = async (request, response) => {
         if (!person) {
             return response.status(400).send({ status: false, message: 'User NOT Found' });
         }
+        else {
+            await Post.deleteMany({ person: personId });
+            await Person.deleteOne({ _id: personId });
 
-        await Post.deleteMany({ person: personId });
-        await Person.deleteOne({ _id: personId });
-
-        return response.status(200).send({ status: true, message: 'User Deleted Successfully' });
-
+            return response.status(200).send({ status: true, message: 'User Deleted Successfully' });
+        }
     } catch (error) {
         console.error('Error!!!---------------', error);
         return response.status(400).send({ status: false, message: "Error in Deleting Person Data" });
@@ -193,25 +193,26 @@ const savingPost = async (request, response) => {
         if (!person) {
             return response.status(400).send({ status: false, message: 'User NOT Found' });
         }
-        if (!post) {
+        else if (!post) {
             return response.status(400).send({ status: false, message: 'Post NOT Found' });
         }
-        let saveArray = person.saved;
-        const indexPost = saveArray.indexOf(post._id);
-        if (indexPost >= 0) {
-            console.log('index-----------------', indexPost);
+        else {
+            let saveArray = person.saved;
+            const indexPost = saveArray.indexOf(post._id);
+            if (indexPost >= 0) {
+                console.log('index-----------------', indexPost);
 
-            const x = saveArray.splice(indexPost, 1);
+                const x = saveArray.splice(indexPost, 1);
+                person.saved = saveArray;
 
-            person.saved = saveArray;
-
-            await person.save();
-            return response.status(200).send({ status: true, message: 'Post Unsaved Successfully' });
-        }
-        else{
-            person.saved.push(post._id);
-            await person.save();
-            return response.status(200).send({ status: true, message: 'Post Saved Successfully' });
+                await person.save();
+                return response.status(200).send({ status: true, message: 'Post Unsaved Successfully' });
+            }
+            else {
+                person.saved.push(post._id);
+                await person.save();
+                return response.status(200).send({ status: true, message: 'Post Saved Successfully' });
+            }
         }
     } catch (error) {
         console.error('Error!!!---------------', error);

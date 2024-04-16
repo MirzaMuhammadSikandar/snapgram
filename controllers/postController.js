@@ -7,41 +7,41 @@ const Post = require("../models/postModel.js")
 const addPost = async (request, response) => {
     try {
         const { title, caption } = request.body;
+        const person = await Person.findById({ _id: request.user.id });
 
         console.log("request body Add post--------", request.body);
 
         if (!title || !caption || typeof title !== 'string' || typeof caption !== 'string') {
             return response.status(400).send({ status: false, message: "User Input Error" });
         }
-
-        const person = await Person.findById({ _id: request.user.id });
-        if (!person) {
+        else if (!person) {
             return response.status(400).send({ status: false, message: 'User NOT Found' });
         }
+        else {
+            let imageId, imageName;
+            if (request.file) {
+                console.log('request file image----------------------', request.file)
+                imageId = request.file.filename;
+                imageName = request.file.originalname;
+                console.log('imageId-------------', imageId)
+                console.log('imageName-------------', imageName)
+            }
 
-        let imageId, imageName;
-        if (request.file) {
-            console.log('request file image----------------------', request.file)
-            imageId = request.file.filename;
-            imageName = request.file.originalname;
-            console.log('imageId-------------', imageId)
-            console.log('imageName-------------', imageName)
+            // creates an instance of post model
+            const post = new Post({
+                title,
+                caption,
+                imageId,
+                imageName,
+                person: person._id
+            });
+            await post.save();
+
+            person.posts.push(post._id);
+            await person.save();
+
+            return response.status(200).send({ status: true, message: 'Post Uploaded Successfully' });
         }
-
-        // creates an instance of post model
-        const post = new Post({
-            title,
-            caption,
-            imageId,
-            imageName,
-            person: person._id
-        });
-        await post.save();
-
-        person.posts.push(post._id);
-        await person.save();
-
-        return response.status(200).send({ status: true, message: 'Post Uploaded Successfully' });
     } catch (error) {
         console.log('Error add post-------------------', error);
         return response.status(400).send({ status: false, message: 'Error in Posting' });
@@ -53,52 +53,51 @@ const addPost = async (request, response) => {
 const updatePost = async (request, response) => {
     try {
         console.log('update-------------------', request.body);
+        const { title, caption } = request.body;
         const postId = request.params.id;
 
         if (!postId) {
             return response.status(400).send({ status: false, message: "Error! params id missing" });
         }
-
-        const { title, caption } = request.body;
-
-        console.log("req.body--------", request.body);
-
-        if (!title || !caption || typeof title !== 'string' || typeof caption !== 'string') {
+        else if (!title || !caption || typeof title !== 'string' || typeof caption !== 'string') {
             return response.status(400).send({ status: false, message: "User Input Error" });
         }
+        else {
+            const person = await Person.findById({ _id: request.user.id });
+            const post = await Post.findById({ _id: postId });
 
-
-        const person = await Person.findById({ _id: request.user.id });
-        const post = await Post.findById({ _id: postId });
-
-        if (!person) {
-            return response.status(400).send({ status: false, message: 'User NOT Found' });
-        }
-        if (!post) {
-            return response.status(400).send({ status: false, message: 'Post NOT Found' });
-        }
-        if (post.user != person.id) {
-            return response.status(400).send({ status: false, message: 'User have NO Access to update this post' });
-        }
-
-        let imageId, imageName;
-        if (request.file) {
-            console.log('request file image----------------------', request.file)
-            imageId = request.file.filename;
-            imageName = request.file.originalname;
-        }
-
-        const postData = await Task.findByIdAndUpdate({ _id: postId }, {
-            $set: {
-                title,
-                caption,
-                imageId,
-                imageName,
+            if (!person) {
+                return response.status(400).send({ status: false, message: 'User NOT Found' });
             }
-        })
+            else if (!post) {
+                return response.status(400).send({ status: false, message: 'Post NOT Found' });
+            }
+            else if (post.person != person.id) {
+                console.log("post.user-----------", post);
+                console.log("person.id-----------", person.id);
+                return response.status(400).send({ status: false, message: 'User have NO Access to update this post' });
+            }
+            else {
+                let imageId, imageName;
+                if (request.file) {
+                    console.log('request file image----------------------', request.file)
+                    imageId = request.file.filename;
+                    imageName = request.file.originalname;
+                }
 
-        console.log("Person Data----------------", postData)
-        return response.status(200).send({ status: true, message: 'Post Updated Successfully' });
+                const postData = await Post.findByIdAndUpdate({ _id: postId }, {
+                    $set: {
+                        title,
+                        caption,
+                        imageId,
+                        imageName,
+                    }
+                })
+
+                console.log("Person Data----------------", postData)
+                return response.status(200).send({ status: true, message: 'Post Updated Successfully' });
+            }
+        }
     } catch (error) {
         console.log('Error read-------------------', error);
         return response.status(400).send({ status: false, message: 'Error in updating Post' });
@@ -115,27 +114,29 @@ const deletePost = async (request, response) => {
         if (!person) {
             return response.status(400).send({ status: false, message: 'User NOT Found' });
         }
-        if (!post) {
+        else if (!post) {
             return response.status(400).send({ status: false, message: 'Post NOT Found' });
         }
-        if (post.person != person.id) {
+        else if (post.person != person.id) {
             return response.status(400).send({ status: false, message: 'User have NO Access to delete this post' });
         }
-        postArray = person.posts;
-        await Post.deleteOne({ _id: postId });
-        const index = postArray.indexOf(postId);
+        else {
+            postArray = person.posts;
+            await Post.deleteOne({ _id: postId });
+            const index = postArray.indexOf(postId);
 
-        console.log('index-----------------', index);
+            console.log('index-----------------', index);
 
-        const x = postArray.splice(index, 1);
+            const x = postArray.splice(index, 1);
 
-        person.posts = postArray;
-        await person.save();
+            person.posts = postArray;
+            await person.save();
 
-        console.log(`myArray values: ${postArray}`);
-        console.log(`variable x value: ${x}`);
+            console.log(`myArray values: ${postArray}`);
+            console.log(`variable x value: ${x}`);
 
-        return response.status(200).send({ status: true, message: 'Post Deleted Successfully' });
+            return response.status(200).send({ status: true, message: 'Post Deleted Successfully' });
+        }
     } catch (error) {
         console.log('Error read-------------------', error);
         return response.status(400).send({ status: false, message: 'Error in deleting Post' });
@@ -152,16 +153,16 @@ const getPost = async (request, response) => {
         if (!person) {
             return response.status(400).send({ status: false, message: 'User NOT Found' });
         }
-        if (!post) {
+        else if (!post) {
             return response.status(400).send({ status: false, message: 'Post NOT Found' });
         }
-        if (post.person != person.id) {
+        else if (post.person != person.id) {
             return response.status(400).send({ status: false, message: 'User have NO Access to Get this post' });
         }
-
-        console.log('Post--------------------', post);
-        return response.status(200).send({ status: true, message: 'Get Post Successful', data: post });
-
+        else {
+            console.log('Post--------------------', post);
+            return response.status(200).send({ status: true, message: 'Get Post Successful', data: post });
+        }
     } catch (error) {
         console.log('Error get post-------------------', error);
         return response.status(400).send({ status: false, message: 'Error in Get Post' });
@@ -179,29 +180,31 @@ const likePost = async (request, response) => {
         if (!person) {
             return response.status(400).send({ status: false, message: 'User NOT Found' });
         }
-        if (!post) {
+        else if (!post) {
             return response.status(400).send({ status: false, message: 'Post NOT Found' });
         }
-        let likesArray = post.likes;
-        const indexPerson = likesArray.indexOf(person._id);
-        if (indexPerson >= 0) {
-            console.log('index-----------------', indexPerson);
-
-            const x = likesArray.splice(indexPerson, 1);
-
-            post.likes = likesArray;
-            await post.save();
-
-            const countLikes = likesArray.length;
-            return response.status(200).send({ status: true, message: 'Post Unliked Successfully', data: countLikes });
-        }
         else {
-            post.likes.push(person._id);
-            await post.save();
-
             let likesArray = post.likes;
-            const countLikes = likesArray.length;
-            return response.status(200).send({ status: true, message: 'Post Liked Successfully', data: countLikes });
+            const indexPerson = likesArray.indexOf(person._id);
+            if (indexPerson >= 0) {
+                console.log('index-----------------', indexPerson);
+
+                const x = likesArray.splice(indexPerson, 1);
+
+                post.likes = likesArray;
+                await post.save();
+
+                const countLikes = likesArray.length;
+                return response.status(200).send({ status: true, message: 'Post Unliked Successfully', data: countLikes });
+            }
+            else {
+                post.likes.push(person._id);
+                await post.save();
+
+                let likesArray = post.likes;
+                const countLikes = likesArray.length;
+                return response.status(200).send({ status: true, message: 'Post Liked Successfully', data: countLikes });
+            }
         }
     } catch (error) {
         console.log('Error like post-------------------', error);
