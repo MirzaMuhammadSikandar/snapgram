@@ -55,6 +55,10 @@ const login = async (request, response) => {
         const { email, password } = request.body
 
         console.log("Login request body----------", request.body)
+
+        if ( !email || !password || typeof email !== 'string' || typeof password !== 'string') {
+            return response.status(400).send({ status: false, message: "User Input Error" });
+        }
         const person = await Person.findOne({ email })
 
         const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
@@ -64,7 +68,7 @@ const login = async (request, response) => {
         else if (passwordHash == person.password) {
             const accessToken = generateAccessToken(person._id, person.email)
             // const refreshToken = generateRefreshToken(person._id, person.email)
-            return response.status(200).send({ status: true, accessToken: accessToken, personEmail: person.email })
+            return response.status(200).send({ status: true, message: "Login Sucessful", accessToken: accessToken, personEmail: person.email })
         }
         else {
             return response.status(400).send({ status: false, message: "Invalid Password" });
