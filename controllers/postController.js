@@ -6,12 +6,12 @@ const Post = require("../models/postModel.js")
 //----------------------- Add Post -----------------------
 const addPost = async (request, response) => {
     try {
-        const { title, caption } = request.body;
+        const { caption, location, tags } = request.body;
         const person = await Person.findById({ _id: request.user.id });
 
         console.log("request body Add post--------", request.body);
 
-        if (!title || !caption || typeof title !== 'string' || typeof caption !== 'string') {
+        if (!caption || !location || !tags || typeof caption !== 'string' || typeof location !== 'string' || !Array.isArray(tags)) {
             return response.status(400).send({ status: false, message: "User Input Error" });
         }
         else if (!person) {
@@ -29,8 +29,9 @@ const addPost = async (request, response) => {
 
             // creates an instance of post model
             const post = new Post({
-                title,
                 caption,
+                location,
+                tags,
                 imageId,
                 imageName,
                 person: person._id
@@ -53,13 +54,13 @@ const addPost = async (request, response) => {
 const updatePost = async (request, response) => {
     try {
         console.log('update-------------------', request.body);
-        const { title, caption } = request.body;
+        const { caption, location, tags } = request.body;
         const postId = request.params.id;
 
         if (!postId) {
             return response.status(400).send({ status: false, message: "Error! params id missing" });
         }
-        else if (!title || !caption || typeof title !== 'string' || typeof caption !== 'string') {
+        else if (!caption || !location || !tags || typeof caption !== 'string' || typeof location !== 'string' || !Array.isArray(tags)) {
             return response.status(400).send({ status: false, message: "User Input Error" });
         }
         else {
@@ -87,8 +88,9 @@ const updatePost = async (request, response) => {
 
                 const postData = await Post.findByIdAndUpdate({ _id: postId }, {
                     $set: {
-                        title,
                         caption,
+                        location,
+                        tags,
                         imageId,
                         imageName,
                     }

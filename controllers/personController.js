@@ -12,8 +12,15 @@ let refreshTokens = []
 const registration = async (request, response) => {
     const { name, username, email, password: plainTextPassword } = request.body;
     console.log("registration request body---------------------", request.body);
+
+    const personUsername = await Person.findOne({ username })
+
     if (!name || !username || !email || !plainTextPassword || typeof name !== 'string' || typeof username !== 'string' || typeof email !== 'string' || typeof plainTextPassword !== 'string') {
         return response.status(400).send({ status: false, message: "User Input Error" });
+    }
+    else if(personUsername)
+    {
+        return response.status(400).send({ status: false, message: "Username already in use" });
     }
 
     // Hashing Password
@@ -68,7 +75,7 @@ const login = async (request, response) => {
         else if (passwordHash == person.password) {
             const accessToken = generateAccessToken(person._id, person.email)
             // const refreshToken = generateRefreshToken(person._id, person.email)
-            return response.status(200).send({ status: true, message: "Login Sucessful", accessToken: accessToken, personEmail: person.email })
+            return response.status(200).send({ status: true, message: "Login Successful", accessToken: accessToken, personEmail: person.email })
         }
         else {
             return response.status(400).send({ status: false, message: "Invalid Password" });

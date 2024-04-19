@@ -2,10 +2,10 @@ const mongoose = require('mongoose')
 const Person = require('./personModel.js')
 
 const postSchema = new mongoose.Schema({
-    title: { type: String, default: null },
-    time: { type: String, default: null },
-    location: { type: String, default: null },
+    // title: { type: String, default: null },
+    // time: { type: String, default: null },
     caption: { type: String, default: null },
+    location: { type: String, default: null },
     tags: [{ type: String, default: null }],
     imageId: { type: String, default: null},
     imageName: { type: String, default: null},
