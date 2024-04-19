@@ -11,6 +11,7 @@ function authenticateToken(request, response, next){
     }
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, user) => {
+        // console.log('accessToken-------------', token);
 
         if(error)
         {
